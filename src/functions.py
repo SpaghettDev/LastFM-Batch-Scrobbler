@@ -12,7 +12,8 @@ FORMATTED_SPOTIFY_DATA_KEYS1 = [
 FORMATTED_SPOTIFY_DATA_KEYS2 = [
     "artistName", "albumName", "trackName", "time", "duration"
 ]
-NONFORMATTED_SPOTIFY_DATA_KEYS = [
+# StreamingHistory v1
+NONFORMATTED_SPOTIFY_DATA_KEYS1 = [
     "ts", "username", "platform", "ms_played",
     "conn_country", "ip_addr_decrypted",
     "user_agent_decrypted", "master_metadata_track_name",
@@ -22,6 +23,18 @@ NONFORMATTED_SPOTIFY_DATA_KEYS = [
     "episode_show_name", "spotify_episode_uri",
     "reason_start", "reason_end", "shuffle", "skipped",
     "offline", "offline_timestamp", "incognito_mode"
+]
+# StreamingHistory v2
+NONFORMATTED_SPOTIFY_DATA_KEYS2 = [
+    "endTime", "artistName", "trackName", "msPlayed"
+]
+# endsong v1
+NONFORMATTED_SPOTIFY_DATA_KEYS3 = [
+    "albumName", "artistName", "trackName", "datetime"
+]
+# endsong v2
+NONFORMATTED_SPOTIFY_DATA_KEYS4 = [
+    "artistName", "trackName", "time", "duration"
 ]
 
 
@@ -63,22 +76,52 @@ def verify_data(data: list) -> None:
                     list(data[0].keys()) == FORMATTED_SPOTIFY_DATA_KEYS2
                 ) or
                 (
-                    list(data[0].keys()) == NONFORMATTED_SPOTIFY_DATA_KEYS
+                    list(data[0].keys()) == NONFORMATTED_SPOTIFY_DATA_KEYS1 or
+                    list(data[0].keys()) == NONFORMATTED_SPOTIFY_DATA_KEYS2 or
+                    list(data[0].keys()) == NONFORMATTED_SPOTIFY_DATA_KEYS3 or
+                    list(data[0].keys()) == NONFORMATTED_SPOTIFY_DATA_KEYS4
                 )
             )), \
             "Data must be an array of scrobbles!"
     except (KeyError, AssertionError) as e:
-        raise InvalidJSONFile(e) from e
+        raise InvalidJSONFile from e
 
 
 def convert_data(data: list) -> list:
-    if list(data[0].keys()) == NONFORMATTED_SPOTIFY_DATA_KEYS:
+    if list(data[0].keys()) == NONFORMATTED_SPOTIFY_DATA_KEYS1:
         return [
             {
                 "trackName": e["master_metadata_track_name"],
                 "artistName": e["master_metadata_album_artist_name"],
                 "albumName": e["master_metadata_album_album_name"],
                 "time": e["ts"]
+            } for _, e in enumerate(data)
+        ]
+    elif list(data[0].keys()) == NONFORMATTED_SPOTIFY_DATA_KEYS2:
+    	return [
+            {
+                "trackName": e["trackName"],
+                "artistName": e["artistName"],
+                "albumName": None,
+                "time": e["endTime"]
+            } for _, e in enumerate(data)
+        ]
+    elif list(data[0].keys()) == NONFORMATTED_SPOTIFY_DATA_KEYS3:
+    	return [
+            {
+                "trackName": e["trackName"],
+                "artistName": e["artistName"],
+                "albumName": e["albumName"],
+                "time": e["datetime"]
+            } for _, e in enumerate(data)
+        ]
+    elif list(data[0].keys()) == NONFORMATTED_SPOTIFY_DATA_KEYS4:
+    	return [
+            {
+                "trackName": e["trackName"],
+                "artistName": e["artistName"],
+                "albumName": None,
+                "time": e["time"]
             } for _, e in enumerate(data)
         ]
 
@@ -95,7 +138,7 @@ def load_file(file: str) -> Union[list, None]:
 
             return data
         except JSONDecodeError as e:
-            raise InvalidJSONFile(e) from e
+            raise InvalidJSONFile from e
 
 
 def convert_time(time: str) -> int:
