@@ -38,29 +38,29 @@ def main():
         if not response == "y":
             halt()
 
-        for i, e in enumerate(data):
+        for i in range(0, len(data), 50):
             # 5 requests every second, half a second removed
             # to account for requests' time
-            if i % 5 == 0:
-                sleep(0.5)
+            sleep(0.5)
+            tracks = data[i:i + 50]
 
-            LASTFM_NETWORK.scrobble(
-                artist=e["artistName"],
-                title=e["trackName"],
-                timestamp=get_current_time()#convert_time(e["time"])
-                # can't scrobble before lastfm account creation date
-            )
-            print(
-                f"""Scrobbled {i + 1} tracks """
-                f"""[{
-                    e["trackName"]
-                } by {
-                    e["artistName"]
-                } on {
-                    e["albumName"]
-                } the {
-                    e["time"]
-                }]""")
+            LASTFM_NETWORK.scrobble_many(tuple(
+            	{
+                    "artist": track["artistName"],
+                    "title": track["trackName"],
+                    "timestamp": get_current_time(), #convert_time(e["time"])
+                    # can't scrobble before lastfm account creation date
+                } for _, track in enumerate(tracks)
+            ))
+
+            for i2, track in enumerate(tracks):
+	            print(
+	                f"""Scrobbled {i + 1 + i2} tracks """
+	                f"""[{track["trackName"]} by {
+	                    track["artistName"]
+	                } on {track["albumName"]} the {
+	                    track["time"]
+	                }]""")
 
         print(f"Finished scrobbling {len(data)} tracks.")
 
